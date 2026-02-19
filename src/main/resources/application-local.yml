@@ -1,0 +1,77 @@
+# ╔═══════════════════════════════════════════════════════════════════════════╗
+# ║  JobAgent — LOCAL profile (Docker Compose / Ollama / MinIO)              ║
+# ╚═══════════════════════════════════════════════════════════════════════════╝
+
+spring:
+  # ─── Exclude auto-configs not needed for local dev ────────────────
+  # TODO: Sprint 1 — Remove OAuth2 exclusions after configuring Auth Server
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.security.autoconfigure.oauth2.server.OAuth2AuthorizationServerAutoConfiguration
+      - org.springframework.boot.security.autoconfigure.oauth2.server.OAuth2AuthorizationServerJwtAutoConfiguration
+      - org.springframework.boot.security.autoconfigure.oauth2.resource.OAuth2ResourceServerAutoConfiguration
+      - org.springframework.boot.security.autoconfigure.oauth2.client.OAuth2ClientAutoConfiguration
+      - org.springframework.ai.model.openai.autoconfigure.OpenAiAutoConfiguration
+      - org.springframework.ai.model.openai.autoconfigure.OpenAiEmbeddingAutoConfiguration
+
+  # ─── DataSource ───────────────────────────────────────────────────────
+  datasource:
+    url: jdbc:postgresql://localhost:5432/jobagent
+    username: jobagent
+    password: secret
+
+  # ─── Redis / Valkey ───────────────────────────────────────────────────
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+  # ─── Kafka ────────────────────────────────────────────────────────────
+  kafka:
+    bootstrap-servers: localhost:9094
+
+  # ─── Spring AI — Ollama (local) ──────────────────────────────────────
+  ai:
+    ollama:
+      base-url: http://localhost:11434
+      chat:
+        options:
+          model: mistral
+          temperature: 0.7
+      embedding:
+        options:
+          model: nomic-embed-text
+    vectorstore:
+      pgvector:
+        index-type: hnsw
+        distance-type: cosine_distance
+        dimensions: ${app.embedding.dimensions}
+        remove-existing-vector-store-table: false
+        schema-name: public
+        table-name: vector_store
+    # Disable OpenAI auto-config in local profile
+    openai:
+      enabled: false
+      api-key: "not-used-locally"
+
+# ─── App — MinIO (S3-compatible) ───────────────────────────────────────
+app:
+  embedding:
+    dimensions: 768
+  storage:
+    endpoint: http://localhost:9000
+    access-key: minioadmin
+    secret-key: minioadmin
+    region: us-east-1
+  encryption:
+    # Local-only symmetric key (NEVER use in production)
+    secret-key: local-dev-key-32-chars-exactly!!
+  cors:
+    allowed-origins: http://localhost:5173
+
+# ─── Logging ───────────────────────────────────────────────────────────
+logging:
+  level:
+    com.jobagent: DEBUG
+    org.springframework.ai: DEBUG
+    org.flywaydb: INFO
