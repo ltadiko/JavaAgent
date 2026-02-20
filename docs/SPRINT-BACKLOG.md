@@ -67,11 +67,12 @@ src/main/java/com/jobagent/jobagent/
 
 ---
 
-### 1.2 UserProfile JPA Entity
+### ✅ 1.2 UserProfile JPA Entity (DONE)
 
 **Goal:** Create entity for storing user job preferences and PII.
 
 **File:** `src/main/java/com/jobagent/jobagent/auth/model/UserProfile.java`
+**Test:** `src/test/java/com/jobagent/jobagent/auth/model/UserProfileTest.java` — 9 tests ✅
 
 **Entity Mapping:**
 ```java
@@ -902,8 +903,8 @@ public record ApplicationStats(long total, long pending, long submitted,
 |--------|--------|-------------|
 | 0      | ✅ Done | Foundation — Docker, Flyway, common module |
 | 1.1    | ✅ Done | User Entity + 11 unit tests |
-| 1.2    | 🔵 Next | UserProfile Entity |
-| 1.3    | ⬜ Planned | User + UserProfile Repositories |
+| 1.2    | ✅ Done | UserProfile Entity + 9 unit tests |
+| 1.3    | 🔵 Next | User + UserProfile Repositories |
 | 1.4    | ⬜ Planned | Registration DTO + Validation |
 | 1.5    | ⬜ Planned | UserService (registration logic) |
 | 1.6    | ⬜ Planned | Registration REST Controller |
