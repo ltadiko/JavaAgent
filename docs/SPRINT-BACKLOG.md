@@ -911,8 +911,8 @@ public record ApplicationStats(long total, long pending, long submitted,
 | 1.1    | ✅ Done | User Entity + 11 unit tests |
 | 1.2    | ✅ Done | UserProfile Entity + 9 unit tests |
 | 1.3    | ✅ Done | UserRepository + UserProfileRepository |
-| 1.4    | 🔵 Next | Registration DTO + Validation |
-| 1.5    | ⬜ Planned | UserService (registration logic) |
+| 1.4    | ✅ Done | RegisterRequest/Response DTOs + 10 validation tests |
+| 1.5    | 🔵 Next | UserService (registration logic) |
 | 1.6    | ⬜ Planned | Registration REST Controller |
 | 2      | ⬜ Planned | Spring Authorization Server (JWT) |
 | 3      | ⬜ Planned | CV Upload (file storage) |
