@@ -124,9 +124,15 @@ public class UserProfile extends BaseEntity {
 
 ---
 
-### 1.3 UserRepository + UserProfileRepository
+### ✅ 1.3 UserRepository + UserProfileRepository (DONE)
 
 **Goal:** Spring Data JPA repositories with custom query methods.
+
+**Files:**
+- `src/main/java/com/jobagent/jobagent/auth/repository/UserRepository.java` ✅
+- `src/main/java/com/jobagent/jobagent/auth/repository/UserProfileRepository.java` ✅
+- `src/test/.../auth/repository/UserRepositoryIntegrationTest.java` ✅ (5 tests, requires Docker)
+- `src/test/.../auth/repository/UserProfileRepositoryIntegrationTest.java` ✅ (3 tests, requires Docker)
 
 **File:** `src/main/java/com/jobagent/jobagent/auth/repository/UserRepository.java`
 ```java
@@ -904,8 +910,8 @@ public record ApplicationStats(long total, long pending, long submitted,
 | 0      | ✅ Done | Foundation — Docker, Flyway, common module |
 | 1.1    | ✅ Done | User Entity + 11 unit tests |
 | 1.2    | ✅ Done | UserProfile Entity + 9 unit tests |
-| 1.3    | 🔵 Next | User + UserProfile Repositories |
-| 1.4    | ⬜ Planned | Registration DTO + Validation |
+| 1.3    | ✅ Done | UserRepository + UserProfileRepository |
+| 1.4    | 🔵 Next | Registration DTO + Validation |
 | 1.5    | ⬜ Planned | UserService (registration logic) |
 | 1.6    | ⬜ Planned | Registration REST Controller |
 | 2      | ⬜ Planned | Spring Authorization Server (JWT) |
