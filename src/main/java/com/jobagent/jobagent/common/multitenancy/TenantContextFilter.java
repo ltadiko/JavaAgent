@@ -1,9 +1,9 @@
 package com.jobagent.jobagent.common.multitenancy;
 
 import jakarta.servlet.*;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -21,8 +21,11 @@ import java.util.UUID;
  *   1. Sets TenantContext (thread-local)
  *   2. Sets PostgreSQL session variable for RLS: SET LOCAL app.current_tenant = '...'
  *   3. Adds tenantId + userId to MDC for structured logging
+ *
+ * Only registered when a DataSource bean is available (avoids breaking @WebMvcTest slices).
  */
 @Component
+@ConditionalOnBean(DataSource.class)
 @Order(1)
 @Slf4j
 public class TenantContextFilter implements Filter {

@@ -242,12 +242,14 @@ public record RegisterResponse(
 
 ---
 
-### 1.6 Registration REST Controller
+### ✅ 1.6 Registration REST Controller (DONE)
 
 **Goal:** HTTP endpoint for user registration.
 
-**File:** `src/main/java/com/jobagent/jobagent/auth/controller/AuthController.java`
+**File:** `src/main/java/com/jobagent/jobagent/auth/controller/AuthController.java` ✅
 - `POST /api/v1/auth/register` → `@Valid @RequestBody RegisterRequest` → 201 + `RegisterResponse`
+
+**Infrastructure Fix:** `TenantContextFilter.java` — Added `@ConditionalOnBean(DataSource.class)` to prevent `@WebMvcTest` context failures.
 
 **Error Responses:**
 | Status | Condition | Body |
@@ -256,17 +258,18 @@ public record RegisterResponse(
 | 400 | Validation failure | `{ "status": 400, "errors": [{ "field": "email", "message": "..." }] }` |
 | 409 | Duplicate email | `{ "status": 409, "message": "User already exists..." }` |
 
-**Test (Integration):** `AuthControllerIntegrationTest.java` (MockMvc)
-- [ ] Valid request → 201 + body has `userId`, `email`, `region`
-- [ ] Invalid email → 400
-- [ ] Short password → 400
-- [ ] Missing fullName → 400
-- [ ] Invalid country → 400
-- [ ] Duplicate email → 409
-- [ ] Response Content-Type is `application/json`
+**Test (Integration):** `AuthControllerIntegrationTest.java` (standalone MockMvc) — 8 tests ✅
+- [x] Valid request → 201 + body has `userId`, `email`, `region`
+- [x] Invalid email → 400
+- [x] Short password → 400
+- [x] Missing fullName → 400
+- [x] Invalid country → 400
+- [x] Duplicate email → 409
+- [x] Response Content-Type is `application/json`
+- [x] Empty body → 400
 
 **Acceptance Criteria:**
-- `./mvnw test -Dtest=AuthControllerIntegrationTest` → all pass
+- ✅ `./mvnw test -Dtest=AuthControllerIntegrationTest` → 8 tests pass
 - Manual: `curl -X POST localhost:8080/api/v1/auth/register -H 'Content-Type: application/json' -d '{"email":"test@example.com","password":"password123","fullName":"Test User","country":"US"}'` → 201
 
 ---
@@ -913,8 +916,8 @@ public record ApplicationStats(long total, long pending, long submitted,
 | 1.3    | ✅ Done | UserRepository + UserProfileRepository |
 | 1.4    | ✅ Done | RegisterRequest/Response DTOs + 10 validation tests |
 | 1.5    | ✅ Done | UserService + RegionResolver + 36 tests |
-| 1.6    | 🔵 Next | Registration REST Controller |
-| 2      | ⬜ Planned | Spring Authorization Server (JWT) |
+| 1.6    | ✅ Done | Registration REST Controller + 8 integration tests |
+| 2      | 🔵 Next | Spring Authorization Server (JWT) |
 | 3      | ⬜ Planned | CV Upload (file storage) |
 | 4      | ⬜ Planned | CV AI Parsing (Spring AI + Ollama) |
 | 5      | ⬜ Planned | Job Search (scraping + matching) |
