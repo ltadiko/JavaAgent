@@ -10,4 +10,24 @@ Write a motivation letter for a job application. The letter must:
 7. Match the requested tone and language.
 8. Never fabricate qualifications — only use what's in the CV context provided.
 
+=== CANDIDATE INFORMATION ===
+Name: {candidateName}
+Current Title: {candidateTitle}
+Summary: {candidateSummary}
+Skills: {candidateSkills}
+Experience:
+{candidateExperience}
+
+=== JOB INFORMATION ===
+Position: {jobTitle}
+Company: {company}
+Description: {jobDescription}
+Requirements: {jobRequirements}
+
+=== LETTER PARAMETERS ===
+Tone: {tone}
+Language: {language}
+
+{additionalInstructions}
+
 Return ONLY the letter text — no extra commentary.
