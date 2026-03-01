@@ -5,7 +5,7 @@
 # - down-local: stop services (docker compose down)
 # - test: run unit tests only
 
-.PHONY: build build-full up-local down-local test
+.PHONY: build build-full up-local down-local test e2e e2e-ui e2e-setup
 
 # Fast compile without tests (useful for quick verification)
 build:
@@ -28,3 +28,26 @@ down-local:
 # This target runs the surefire unit tests (exclude *IntegrationTest)
 test:
 	mvn -DskipITs=true -Dtest='!**/*IntegrationTest' test
+
+# ─── E2E Tests (Playwright) ──────────────────────────────────────────────
+# Prerequisites:
+#   1. docker compose up -d
+#   2. Backend: mvn spring-boot:run -Dspring-boot.run.profiles=local
+#   3. Frontend Vite dev server starts automatically (or run: cd jobagent-ui && npm run dev)
+
+# Install Playwright browsers (one-time setup)
+e2e-setup:
+	cd jobagent-ui && npm install && npx playwright install chromium
+
+# Run E2E tests headless
+e2e:
+	cd jobagent-ui && npm run test:e2e
+
+# Run E2E tests with Playwright UI (interactive)
+e2e-ui:
+	cd jobagent-ui && npm run test:e2e:ui
+
+# Run E2E tests headed (watch browser)
+e2e-headed:
+	cd jobagent-ui && npm run test:e2e:headed
+
