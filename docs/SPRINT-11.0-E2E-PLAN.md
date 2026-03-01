@@ -65,4 +65,19 @@ make e2e-headed   # watch browser
 ## Build Status
 - **Backend:** 239 tests, 0 failures ✅
 - **Frontend:** TypeScript check passes, Vite build OK ✅
-- **E2E:** 34 test specs created, ready to run against full stack
+- **Playwright:** Chromium browser installed ✅
+- **Test discovery:** 34 tests in 7 files discovered ✅
+- **E2E execution:** 🟡 Pending — requires full stack running (backend + Vite + Docker)
+
+## Known Issues / TODO (Continue Next Session)
+1. Backend register endpoint (`POST /api/v1/auth/register`) returned 404 during manual curl test — needs investigation
+2. No `/api/v1/auth/login` endpoint exists — auth uses Spring Authorization Server `/oauth2/token`; auth.api.ts login function may need to be updated to use OAuth2 token endpoint
+3. E2E auth fixture assumes a simple login form → backend token exchange; may need to adapt for OAuth2 PKCE flow
+4. Once backend endpoints verified, run each spec one by one:
+   - `npx playwright test auth.spec.ts`
+   - `npx playwright test dashboard.spec.ts`
+   - `npx playwright test cv-upload.spec.ts`
+   - `npx playwright test job-search.spec.ts`
+   - `npx playwright test motivation-letters.spec.ts`
+   - `npx playwright test applications.spec.ts`
+   - `npx playwright test navigation.spec.ts`

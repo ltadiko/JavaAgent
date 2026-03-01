@@ -1015,15 +1015,16 @@ public record ApplicationStats(long total, long pending, long submitted,
 | 1.4    | ✅ Done | RegisterRequest/Response DTOs + 10 validation tests |
 | 1.5    | ✅ Done | UserService + RegionResolver + 36 tests |
 | 1.6    | ✅ Done | Registration REST Controller + 8 integration tests |
-| 2      | 🔵 Next | Spring Authorization Server (JWT) |
-| 3      | ⬜ Planned | CV Upload (file storage) |
-| 4      | ⬜ Planned | CV AI Parsing (Spring AI + Ollama) |
-| 5      | ⬜ Planned | Job Search (scraping + matching) |
-| 6      | ⬜ Planned | Motivation Letter Generation |
-| 7      | ⬜ Planned | Job Application Automation |
-| 8      | ⬜ Planned | Application Dashboard + Stats |
-| 9      | ⬜ Planned | Vue.js Frontend Integration |
-| 10     | ⬜ Planned | Production Hardening |
+| 2      | ✅ Done | Spring Authorization Server (JWT) |
+| 3      | ✅ Done | CV Upload (file storage) |
+| 4      | ✅ Done | CV AI Parsing (Spring AI + Ollama) |
+| 5      | ✅ Done | Job Search (scraping + matching) |
+| 6      | ✅ Done | Motivation Letter Generation |
+| 7      | ✅ Done | Job Application Automation |
+| 8      | ✅ Done | Application Dashboard + Stats |
+| 9      | ✅ Done | Vue.js Frontend Integration |
+| 10     | ✅ Done | Production Hardening (Swagger, Health, Rate Limiting) |
+| 11     | 🟡 WIP | E2E Testing (Playwright) — tests created, verification in progress |
 
 ---
 

@@ -52,5 +52,10 @@ jobagent-ui/node_modules/
 jobagent-ui/dist/
 jobagent-ui/.env.local
 
+### Playwright ###
+jobagent-ui/playwright-report/
+jobagent-ui/test-results/
+jobagent-ui/blob-report/
+
 ### Docker ###
 docker-compose.override.yml
