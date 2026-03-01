@@ -14,13 +14,15 @@ import org.springframework.web.cors.CorsConfigurationSource;
 
 /**
  * Security configuration — Sprint 2.1: JWT Resource Server enabled.
+ * Sprint 10.5: Added Swagger UI public access.
  *
  * <p>Public endpoints:
  * <ul>
  *   <li>POST /api/v1/auth/register - User registration</li>
  *   <li>GET /actuator/** - Health/metrics</li>
  *   <li>GET / - Welcome page</li>
- *   <li>/oauth2/**, /.well-known/** - Auth server (handled by AuthorizationServerConfig)</li>
+ *   <li>/oauth2/**, /.well-known/** - Auth server</li>
+ *   <li>/swagger-ui/**, /v3/api-docs/** - API documentation</li>
  * </ul>
  *
  * <p>Protected endpoints (require valid JWT):
@@ -50,6 +52,9 @@ public class SecurityConfig {
                 .requestMatchers("/oauth2/**", "/.well-known/**").permitAll()
                 .requestMatchers("/api/v1/auth/register").permitAll()
                 .requestMatchers("/api/v1/auth/login").permitAll()
+                // Swagger / OpenAPI
+                .requestMatchers("/swagger-ui/**", "/swagger-ui.html").permitAll()
+                .requestMatchers("/v3/api-docs/**").permitAll()
                 // All other API endpoints require authentication
                 .requestMatchers("/api/**").authenticated()
                 // Default: permit (for static resources, error pages, etc.)
