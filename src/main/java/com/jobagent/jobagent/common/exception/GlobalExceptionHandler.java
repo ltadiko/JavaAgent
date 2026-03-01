@@ -1,5 +1,7 @@
 package com.jobagent.jobagent.common.exception;
 
+import com.jobagent.jobagent.cv.service.CvUploadService;
+import com.jobagent.jobagent.cv.service.MinioFileStorageService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
@@ -66,6 +68,27 @@ public class GlobalExceptionHandler {
                 HttpStatus.CONFLICT, ex.getMessage());
         problem.setTitle("Duplicate Resource");
         problem.setType(URI.create("https://jobagent.com/errors/duplicate"));
+        problem.setProperty("timestamp", Instant.now());
+        return problem;
+    }
+
+    @ExceptionHandler(CvUploadService.CvUploadException.class)
+    public ProblemDetail handleCvUpload(CvUploadService.CvUploadException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.BAD_REQUEST, ex.getMessage());
+        problem.setTitle("CV Upload Error");
+        problem.setType(URI.create("https://jobagent.com/errors/cv-upload"));
+        problem.setProperty("timestamp", Instant.now());
+        return problem;
+    }
+
+    @ExceptionHandler(MinioFileStorageService.StorageException.class)
+    public ProblemDetail handleStorage(MinioFileStorageService.StorageException ex) {
+        log.error("Storage error: {}", ex.getMessage());
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.SERVICE_UNAVAILABLE, "Storage service unavailable");
+        problem.setTitle("Storage Error");
+        problem.setType(URI.create("https://jobagent.com/errors/storage"));
         problem.setProperty("timestamp", Instant.now());
         return problem;
     }
