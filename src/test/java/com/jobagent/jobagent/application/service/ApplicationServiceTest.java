@@ -1,8 +1,10 @@
 package com.jobagent.jobagent.application.service;
 
 import com.jobagent.jobagent.application.dto.*;
+import com.jobagent.jobagent.application.model.ApplicationEvent;
 import com.jobagent.jobagent.application.model.ApplicationStatus;
 import com.jobagent.jobagent.application.model.JobApplication;
+import com.jobagent.jobagent.application.repository.ApplicationEventRepository;
 import com.jobagent.jobagent.application.repository.JobApplicationRepository;
 import com.jobagent.jobagent.auth.model.User;
 import com.jobagent.jobagent.auth.repository.UserRepository;
@@ -47,6 +49,9 @@ class ApplicationServiceTest {
 
     @Mock
     private JobApplicationRepository applicationRepository;
+
+    @Mock
+    private ApplicationEventRepository eventRepository;
 
     @Mock
     private UserRepository userRepository;
@@ -106,6 +111,8 @@ class ApplicationServiceTest {
         assertThat(response.status()).isEqualTo(ApplicationStatus.DRAFT);
         assertThat(response.additionalMessage()).isEqualTo("Please consider my application");
         verify(applicationRepository).save(any(JobApplication.class));
+        verify(eventRepository).save(argThat(event ->
+                event.getEventType() == ApplicationEvent.EventType.CREATED));
     }
 
     @Test
@@ -140,6 +147,10 @@ class ApplicationServiceTest {
         // Then
         assertThat(response.status()).isEqualTo(ApplicationStatus.PENDING);
         verify(senderService).sendAsync(APP_ID);
+        verify(eventRepository).save(argThat(event ->
+                event.getEventType() == ApplicationEvent.EventType.STATUS_CHANGED &&
+                event.getOldStatus() == ApplicationStatus.DRAFT &&
+                event.getNewStatus() == ApplicationStatus.PENDING));
     }
 
     @Test
@@ -264,6 +275,43 @@ class ApplicationServiceTest {
 
         // Then
         assertThat(result).isTrue();
+    }
+
+    @Test
+    @DisplayName("getTimeline() returns events for application")
+    void getTimeline_returnsEvents() {
+        // Given
+        JobApplication application = createTestApplication();
+        when(applicationRepository.findByIdAndUserIdAndTenantId(APP_ID, USER_ID, TENANT_ID))
+                .thenReturn(Optional.of(application));
+
+        ApplicationEvent event = ApplicationEvent.statusChange(
+                application, ApplicationStatus.DRAFT, ApplicationStatus.PENDING, "Submitted");
+        event.setId(UUID.randomUUID());
+
+        when(eventRepository.findByApplicationIdAndTenantIdOrderByCreatedAtDesc(APP_ID, TENANT_ID))
+                .thenReturn(List.of(event));
+
+        // When
+        List<ApplicationTimeline> timeline = service.getTimeline(APP_ID, USER_ID);
+
+        // Then
+        assertThat(timeline).hasSize(1);
+        assertThat(timeline.get(0).eventType()).isEqualTo("STATUS_CHANGED");
+        assertThat(timeline.get(0).oldStatus()).isEqualTo(ApplicationStatus.DRAFT);
+        assertThat(timeline.get(0).newStatus()).isEqualTo(ApplicationStatus.PENDING);
+    }
+
+    @Test
+    @DisplayName("getTimeline() throws when application not found")
+    void getTimeline_notFound_throws() {
+        // Given
+        when(applicationRepository.findByIdAndUserIdAndTenantId(APP_ID, USER_ID, TENANT_ID))
+                .thenReturn(Optional.empty());
+
+        // When/Then
+        assertThatThrownBy(() -> service.getTimeline(APP_ID, USER_ID))
+                .isInstanceOf(ResourceNotFoundException.class);
     }
 
     private User createTestUser() {

@@ -1,8 +1,10 @@
 package com.jobagent.jobagent.application.service;
 
 import com.jobagent.jobagent.application.dto.*;
+import com.jobagent.jobagent.application.model.ApplicationEvent;
 import com.jobagent.jobagent.application.model.ApplicationStatus;
 import com.jobagent.jobagent.application.model.JobApplication;
+import com.jobagent.jobagent.application.repository.ApplicationEventRepository;
 import com.jobagent.jobagent.application.repository.JobApplicationRepository;
 import com.jobagent.jobagent.auth.model.User;
 import com.jobagent.jobagent.auth.repository.UserRepository;
@@ -37,6 +39,7 @@ import java.util.UUID;
 public class ApplicationService {
 
     private final JobApplicationRepository applicationRepository;
+    private final ApplicationEventRepository eventRepository;
     private final UserRepository userRepository;
     private final JobListingRepository jobRepository;
     private final CvDetailsRepository cvRepository;
@@ -84,6 +87,7 @@ public class ApplicationService {
                 .build();
 
         application = applicationRepository.save(application);
+        eventRepository.save(ApplicationEvent.created(application));
         log.info("Created application {} for job {}", application.getId(), job.getTitle());
 
         return JobApplicationResponse.from(application);
@@ -104,8 +108,11 @@ public class ApplicationService {
             throw new IllegalStateException("Cannot submit application in status: " + application.getStatus());
         }
 
+        ApplicationStatus oldStatus = application.getStatus();
         application.submit();
         application = applicationRepository.save(application);
+        eventRepository.save(ApplicationEvent.statusChange(
+                application, oldStatus, application.getStatus(), "Application submitted"));
 
         log.info("Submitted application {} for sending", applicationId);
 
@@ -166,8 +173,11 @@ public class ApplicationService {
                         applicationId, userId, tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Application not found: " + applicationId));
 
+        ApplicationStatus oldStatus = application.getStatus();
         application.setStatus(update.status());
         application = applicationRepository.save(application);
+        eventRepository.save(ApplicationEvent.statusChange(
+                application, oldStatus, update.status(), update.notes()));
 
         log.info("Updated application {} status to {}", applicationId, update.status());
 
@@ -204,8 +214,11 @@ public class ApplicationService {
                         applicationId, userId, tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Application not found: " + applicationId));
 
+        ApplicationStatus oldStatus = application.getStatus();
         application.withdraw();
         application = applicationRepository.save(application);
+        eventRepository.save(ApplicationEvent.statusChange(
+                application, oldStatus, ApplicationStatus.WITHDRAWN, "Application withdrawn by user"));
 
         log.info("Withdrew application {}", applicationId);
 
@@ -240,6 +253,23 @@ public class ApplicationService {
                 byStatus.getOrDefault(ApplicationStatus.REJECTED.name(), 0L),
                 byStatus
         );
+    }
+
+    /**
+     * Get timeline of events for an application.
+     */
+    @Transactional(readOnly = true)
+    public List<ApplicationTimeline> getTimeline(UUID applicationId, UUID userId) {
+        UUID tenantId = TenantContext.requireTenantId();
+
+        // Verify the user owns this application
+        applicationRepository.findByIdAndUserIdAndTenantId(applicationId, userId, tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Application not found: " + applicationId));
+
+        return eventRepository.findByApplicationIdAndTenantIdOrderByCreatedAtDesc(applicationId, tenantId)
+                .stream()
+                .map(ApplicationTimeline::from)
+                .toList();
     }
 
     /**

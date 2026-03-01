@@ -2,6 +2,8 @@ package com.jobagent.jobagent.cv.repository;
 
 import com.jobagent.jobagent.cv.model.CvDetails;
 import com.jobagent.jobagent.cv.model.CvStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -37,6 +39,12 @@ public interface CvDetailsRepository extends JpaRepository<CvDetails, UUID> {
      * Find CVs by tenant (for admin purposes).
      */
     List<CvDetails> findByTenantId(UUID tenantId);
+
+    /**
+     * Sprint 8.0 — Find CVs for a user with pagination (for dashboard).
+     */
+    Page<CvDetails> findByUserIdAndTenantIdOrderByCreatedAtDesc(
+            UUID userId, UUID tenantId, Pageable pageable);
 
     /**
      * Sprint 5.6 — Find the latest parsed CV for a user (for job matching).

@@ -12,6 +12,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -155,6 +156,19 @@ public class ApplicationController {
         UUID userId = UUID.fromString(jwt.getSubject());
         ApplicationStatsResponse stats = applicationService.getStats(userId);
         return ResponseEntity.ok(stats);
+    }
+
+    /**
+     * Get application timeline / audit trail.
+     */
+    @GetMapping("/{id}/timeline")
+    public ResponseEntity<List<ApplicationTimeline>> getTimeline(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable UUID id) {
+
+        UUID userId = UUID.fromString(jwt.getSubject());
+        List<ApplicationTimeline> timeline = applicationService.getTimeline(id, userId);
+        return ResponseEntity.ok(timeline);
     }
 
     /**
