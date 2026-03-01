@@ -1,15 +1,12 @@
 package com.jobagent.jobagent.auth.repository;
 
+import com.jobagent.jobagent.AbstractIntegrationTest;
 import com.jobagent.jobagent.auth.model.User;
 import com.jobagent.jobagent.auth.model.UserProfile;
-import com.jobagent.jobagent.common.multitenancy.TenantContext;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
@@ -19,13 +16,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Sprint 1.3 — Integration tests for UserProfileRepository.
- * Requires Docker PostgreSQL: docker compose up -d postgres
+ * Uses Testcontainers for PostgreSQL.
  */
-@SpringBootTest
-@ActiveProfiles("local")
 @Transactional
 @DisplayName("UserProfileRepository Integration Tests")
-class UserProfileRepositoryIntegrationTest {
+class UserProfileRepositoryIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private UserRepository userRepository;
@@ -34,13 +29,10 @@ class UserProfileRepositoryIntegrationTest {
     private UserProfileRepository userProfileRepository;
 
     private User savedUser;
-    private UUID testTenantId;
 
     @BeforeEach
     void setUp() {
-        // Set up tenant context for tests - TenantEntityListener requires this
-        testTenantId = UUID.randomUUID();
-        TenantContext.setTenantId(testTenantId);
+        super.setUpTenantContext();
 
         User user = User.builder()
                 .email("profile.repo@example.com")
@@ -53,10 +45,6 @@ class UserProfileRepositoryIntegrationTest {
         savedUser = userRepository.saveAndFlush(user);
     }
 
-    @AfterEach
-    void tearDown() {
-        TenantContext.clear();
-    }
 
     @Test
     @DisplayName("save() should persist UserProfile linked to User")

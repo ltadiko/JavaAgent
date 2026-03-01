@@ -1,13 +1,10 @@
 package com.jobagent.jobagent.auth.repository;
 
-import com.jobagent.jobagent.common.multitenancy.TenantContext;
-import org.junit.jupiter.api.AfterEach;
+import com.jobagent.jobagent.AbstractIntegrationTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
@@ -19,13 +16,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Sprint 2.2 — Integration tests for JpaRegisteredClientRepository.
- * Requires Docker PostgreSQL: docker compose up -d postgres
+ * Uses Testcontainers for PostgreSQL.
  */
-@SpringBootTest
-@ActiveProfiles("local")
 @Transactional
 @DisplayName("JpaRegisteredClientRepository Integration Tests")
-class JpaRegisteredClientRepositoryIntegrationTest {
+class JpaRegisteredClientRepositoryIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private OAuth2RegisteredClientJpaRepository repo;
@@ -33,18 +28,9 @@ class JpaRegisteredClientRepositoryIntegrationTest {
     @Autowired
     private JpaRegisteredClientRepository adapter;
 
-    private UUID testTenantId;
-
     @BeforeEach
     void setUp() {
-        // Set up tenant context for tests - TenantEntityListener requires this
-        testTenantId = UUID.randomUUID();
-        TenantContext.setTenantId(testTenantId);
-    }
-
-    @AfterEach
-    void tearDown() {
-        TenantContext.clear();
+        super.setUpTenantContext();
     }
 
     @Test

@@ -1,14 +1,11 @@
 package com.jobagent.jobagent.auth.repository;
 
+import com.jobagent.jobagent.AbstractIntegrationTest;
 import com.jobagent.jobagent.auth.model.User;
-import com.jobagent.jobagent.common.multitenancy.TenantContext;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
@@ -18,25 +15,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Sprint 1.3 — Integration tests for UserRepository.
- * Requires Docker PostgreSQL: docker compose up -d postgres
+ * Uses Testcontainers for PostgreSQL.
  */
-@SpringBootTest
-@ActiveProfiles("local")
 @Transactional
 @DisplayName("UserRepository Integration Tests")
-class UserRepositoryIntegrationTest {
+class UserRepositoryIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private UserRepository userRepository;
 
     private User savedUser;
-    private UUID testTenantId;
 
     @BeforeEach
     void setUp() {
-        // Set up tenant context for tests - TenantEntityListener requires this
-        testTenantId = UUID.randomUUID();
-        TenantContext.setTenantId(testTenantId);
+        super.setUpTenantContext();
 
         User user = User.builder()
                 .email("repo.test@example.com")
@@ -49,10 +41,6 @@ class UserRepositoryIntegrationTest {
         savedUser = userRepository.saveAndFlush(user);
     }
 
-    @AfterEach
-    void tearDown() {
-        TenantContext.clear();
-    }
 
     @Test
     @DisplayName("save() should generate UUID id")

@@ -554,7 +554,105 @@ public record CvParsedData(
 
 ---
 
-## Sprint 5 — Job Search (scraping + matching)
+## ✅ Sprint 5 — Job Search Core (DONE)
+
+> **Implementation Date:** March 1, 2026  
+> **Report:** `docs/SPRINT-5.0-REPORT.md`
+
+### ✅ 5.1 JobListing JPA Entity (DONE)
+
+**File:** `src/main/java/com/jobagent/jobagent/jobsearch/model/JobListing.java`
+- Fields: `title`, `company`, `location`, `description` (TEXT), `salaryMin`, `salaryMax`, `salaryCurrency`, `employmentType` (FULL_TIME/PART_TIME/CONTRACT), `remoteType` (REMOTE/HYBRID/ON_SITE), `sourceUrl`, `externalId`, `expiresAt`, `status`
+- Skills stored as JSONB for efficient matching
+- Multi-tenant with TenantEntityListener
+
+**Test (Unit):** `JobListingTest.java` — 15 tests ✅
+
+---
+
+### ✅ 5.2 Enums (DONE)
+
+**Files:**
+- `JobStatus.java` — ACTIVE, EXPIRED, APPLIED, FILLED, SAVED
+- `EmploymentType.java` — FULL_TIME, PART_TIME, CONTRACT, etc.
+- `RemoteType.java` — ON_SITE, REMOTE, HYBRID
+
+---
+
+### ✅ 5.3 JobListing Repository (DONE)
+
+**File:** `src/main/java/com/jobagent/jobagent/jobsearch/repository/JobListingRepository.java`
+- `findByTenantIdAndStatus(UUID, JobStatus, Pageable)`
+- `searchByTitle()`, `fullTextSearch()` via PostgreSQL tsvector
+- `findBySkillsContaining()` via JSONB operators
+- `advancedSearch()` with multiple criteria
+- `findExpiredJobs()` for scheduled expiration
+
+---
+
+### ✅ 5.4 Job DTOs (DONE)
+
+**Files:**
+- `JobListingResponse.java` — API response with factory method
+- `JobSearchRequest.java` — Search filters with defaults
+- `JobMatchScore.java` — Match result with percentage
+- `CreateJobRequest.java` — Job creation request
+
+---
+
+### ✅ 5.5 JobSearchService (DONE)
+
+**File:** `src/main/java/com/jobagent/jobagent/jobsearch/service/JobSearchService.java`
+- Get active jobs, search with filters, create jobs
+- External ID deduplication, status updates
+- Mark expired jobs
+
+**Test (Unit):** `JobSearchServiceTest.java` — 8 tests ✅
+
+---
+
+### ✅ 5.6 JobMatchingService (DONE)
+
+**File:** `src/main/java/com/jobagent/jobagent/jobsearch/service/JobMatchingService.java`
+- Match jobs to user CV skills
+- Calculate match percentage
+- Skill matching: exact, partial, alias support
+
+**Test (Unit):** `JobMatchingServiceTest.java` — 10 tests ✅
+
+---
+
+### ✅ 5.7 JobSearchController (DONE)
+
+**File:** `src/main/java/com/jobagent/jobagent/jobsearch/controller/JobSearchController.java`
+- `GET /api/v1/jobs` — List jobs
+- `POST /api/v1/jobs/search` — Search with filters
+- `GET /api/v1/jobs/matches` — CV-matched jobs
+- `GET /api/v1/jobs/top-matches` — Top N matches
+- `POST /api/v1/jobs` — Create job
+
+---
+
+### ✅ 5.8 Flyway Migration (DONE)
+
+**File:** `V7__create_job_listings.sql`
+- job_listings table with GIN index for skills
+- Full-text search index
+- Composite indexes
+
+---
+
+### 🔮 5.9 Job Scraping (Future Sprint)
+
+The following tasks are deferred to a future sprint:
+- JobEmbedding entity for vector similarity
+- Job scraper services (Indeed, LinkedIn, Generic)
+- Web search integration
+- Playwright automation
+
+---
+
+## Sprint 5 — Job Search (scraping + matching) — ORIGINAL PLAN
 
 ### 5.1 JobListing JPA Entity
 

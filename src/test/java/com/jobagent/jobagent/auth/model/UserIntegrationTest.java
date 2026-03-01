@@ -1,14 +1,11 @@
 package com.jobagent.jobagent.auth.model;
 
-import com.jobagent.jobagent.common.multitenancy.TenantContext;
+import com.jobagent.jobagent.AbstractIntegrationTest;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
@@ -18,28 +15,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * Sprint 1.1 — Integration test for User entity.
  * Tests JPA persistence, tenant_id auto-assignment, and database constraints.
+ * Uses Testcontainers for PostgreSQL.
  */
-@SpringBootTest
-@ActiveProfiles("local")
 @Transactional
 @DisplayName("User Entity Integration Tests")
-class UserIntegrationTest {
+class UserIntegrationTest extends AbstractIntegrationTest {
 
     @PersistenceContext
     private EntityManager entityManager;
 
-    private UUID testTenantId;
-
     @BeforeEach
     void setUp() {
-        // Set up tenant context for tests - TenantEntityListener requires this
-        testTenantId = UUID.randomUUID();
-        TenantContext.setTenantId(testTenantId);
-    }
-
-    @AfterEach
-    void tearDown() {
-        TenantContext.clear();
+        super.setUpTenantContext();
     }
 
     @Test

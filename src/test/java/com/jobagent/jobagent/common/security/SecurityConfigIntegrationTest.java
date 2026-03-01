@@ -1,12 +1,11 @@
 package com.jobagent.jobagent.common.security;
 
+import com.jobagent.jobagent.AbstractIntegrationTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -15,12 +14,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * Sprint 2.1.5 — Security configuration integration tests.
+ * Uses Testcontainers for PostgreSQL.
  */
-@SpringBootTest
 @AutoConfigureMockMvc
-@ActiveProfiles("local")
 @DisplayName("SecurityConfig Integration Tests")
-class SecurityConfigIntegrationTest {
+class SecurityConfigIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
