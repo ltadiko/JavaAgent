@@ -13,6 +13,10 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
  *
  * Allowed dependency: any module → common
  * Forbidden: cross-module dependencies (e.g., cv → motivation)
+ *
+ * Note: allowEmptyShould(true) is used because some modules (cv, motivation,
+ * apply, application) don't exist yet. Once those modules are created,
+ * these rules will validate real classes.
  */
 @AnalyzeClasses(
         packages = "com.jobagent.jobagent",
@@ -30,29 +34,34 @@ class ModuleDependencyTest {
     static final ArchRule cv_should_not_depend_on_motivation =
             noClasses().that().resideInAPackage(CV)
                     .should().dependOnClassesThat().resideInAPackage(MOTIVATION)
-                    .because("CV module must not depend on Motivation module");
+                    .because("CV module must not depend on Motivation module")
+                    .allowEmptyShould(true);
 
     @ArchTest
     static final ArchRule cv_should_not_depend_on_apply =
             noClasses().that().resideInAPackage(CV)
                     .should().dependOnClassesThat().resideInAPackage(APPLY)
-                    .because("CV module must not depend on Apply module");
+                    .because("CV module must not depend on Apply module")
+                    .allowEmptyShould(true);
 
     @ArchTest
     static final ArchRule auth_should_not_depend_on_business_modules =
             noClasses().that().resideInAPackage(AUTH)
                     .should().dependOnClassesThat().resideInAnyPackage(CV, JOBSEARCH, MOTIVATION, APPLY, APPLICATION)
-                    .because("Auth module must not depend on business modules");
+                    .because("Auth module must not depend on business modules")
+                    .allowEmptyShould(true);
 
     @ArchTest
     static final ArchRule motivation_should_not_depend_on_apply =
             noClasses().that().resideInAPackage(MOTIVATION)
                     .should().dependOnClassesThat().resideInAPackage(APPLY)
-                    .because("Motivation module must not depend on Apply module");
+                    .because("Motivation module must not depend on Apply module")
+                    .allowEmptyShould(true);
 
     @ArchTest
     static final ArchRule application_view_should_not_depend_on_apply =
             noClasses().that().resideInAPackage(APPLICATION)
                     .should().dependOnClassesThat().resideInAPackage(APPLY)
-                    .because("Application view module must not depend on Apply module");
+                    .because("Application view module must not depend on Apply module")
+                    .allowEmptyShould(true);
 }

@@ -1,6 +1,8 @@
 package com.jobagent.jobagent.auth.repository;
 
 import com.jobagent.jobagent.auth.model.User;
+import com.jobagent.jobagent.common.multitenancy.TenantContext;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -27,11 +29,15 @@ class UserRepositoryIntegrationTest {
     @Autowired
     private UserRepository userRepository;
 
-
     private User savedUser;
+    private UUID testTenantId;
 
     @BeforeEach
     void setUp() {
+        // Set up tenant context for tests - TenantEntityListener requires this
+        testTenantId = UUID.randomUUID();
+        TenantContext.setTenantId(testTenantId);
+
         User user = User.builder()
                 .email("repo.test@example.com")
                 .emailHash("sha256_repo_test_hash_" + UUID.randomUUID())
@@ -41,6 +47,11 @@ class UserRepositoryIntegrationTest {
                 .region("EU")
                 .build();
         savedUser = userRepository.saveAndFlush(user);
+    }
+
+    @AfterEach
+    void tearDown() {
+        TenantContext.clear();
     }
 
     @Test

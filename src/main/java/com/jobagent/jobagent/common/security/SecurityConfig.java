@@ -3,6 +3,7 @@ package com.jobagent.jobagent.common.security;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -12,14 +13,20 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfigurationSource;
 
 /**
- * Security configuration — Sprint 0: all endpoints open.
+ * Security configuration — Sprint 2.1: JWT Resource Server enabled.
  *
- * TODO: Sprint 1 — Re-enable JWT authentication:
- *   1. Add Authorization Server filter chain (@Order(1))
- *   2. Configure oauth2ResourceServer(oauth2 -> oauth2.jwt(...)) with issuer-uri
- *   3. Change .anyRequest().permitAll() → .anyRequest().authenticated()
- *   4. Add JWT token customizer (tenant_id, region claims)
- *   5. Configure spring.security.oauth2.resourceserver.jwt.issuer-uri in YAML
+ * <p>Public endpoints:
+ * <ul>
+ *   <li>POST /api/v1/auth/register - User registration</li>
+ *   <li>GET /actuator/** - Health/metrics</li>
+ *   <li>GET / - Welcome page</li>
+ *   <li>/oauth2/**, /.well-known/** - Auth server (handled by AuthorizationServerConfig)</li>
+ * </ul>
+ *
+ * <p>Protected endpoints (require valid JWT):
+ * <ul>
+ *   <li>All other /api/** endpoints</li>
+ * </ul>
  */
 @Configuration
 @EnableWebSecurity
@@ -37,9 +44,19 @@ public class SecurityConfig {
             .sessionManagement(session ->
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                // TODO: Sprint 1 — restrict to authenticated after JWT is configured
+                // Public endpoints
+                .requestMatchers("/").permitAll()
+                .requestMatchers("/actuator/**").permitAll()
+                .requestMatchers("/oauth2/**", "/.well-known/**").permitAll()
+                .requestMatchers("/api/v1/auth/register").permitAll()
+                .requestMatchers("/api/v1/auth/login").permitAll()
+                // All other API endpoints require authentication
+                .requestMatchers("/api/**").authenticated()
+                // Default: permit (for static resources, error pages, etc.)
                 .anyRequest().permitAll()
-            );
+            )
+            // Enable JWT resource server
+            .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()));
 
         return http.build();
     }

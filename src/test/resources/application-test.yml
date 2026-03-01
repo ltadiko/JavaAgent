@@ -1,0 +1,19 @@
+# ╔═══════════════════════════════════════════════════════════════════════════╗
+# ║  JobAgent — TEST profile (unit tests without DB)                          ║
+# ╚═══════════════════════════════════════════════════════════════════════════╝
+
+spring:
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+      - org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration
+      - org.springframework.boot.flyway.autoconfigure.FlywayAutoConfiguration
+      - org.springframework.boot.security.autoconfigure.oauth2.server.OAuth2AuthorizationServerAutoConfiguration
+      - org.springframework.boot.security.autoconfigure.oauth2.server.OAuth2AuthorizationServerJwtAutoConfiguration
+      - org.springframework.boot.security.autoconfigure.oauth2.resource.OAuth2ResourceServerAutoConfiguration
+      - org.springframework.boot.security.autoconfigure.oauth2.client.OAuth2ClientAutoConfiguration
+      - org.springframework.ai.model.openai.autoconfigure.OpenAiAutoConfiguration
+      - org.springframework.ai.model.openai.autoconfigure.OpenAiEmbeddingAutoConfiguration
+      - org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration

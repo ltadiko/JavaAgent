@@ -1,0 +1,3 @@
+# Test execution listeners have been intentionally removed; no automatic TestExecutionListener registrations.
+org.springframework.test.context.TestExecutionListener=\
+com.jobagent.jobagent.test.TestTenantExecutionListener

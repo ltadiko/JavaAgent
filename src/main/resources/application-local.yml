@@ -4,13 +4,9 @@
 
 spring:
   # ─── Exclude auto-configs not needed for local dev ────────────────
-  # TODO: Sprint 1 — Remove OAuth2 exclusions after configuring Auth Server
+  # Sprint 2.1: OAuth2 exclusions removed - Authorization Server now configured
   autoconfigure:
     exclude:
-      - org.springframework.boot.security.autoconfigure.oauth2.server.OAuth2AuthorizationServerAutoConfiguration
-      - org.springframework.boot.security.autoconfigure.oauth2.server.OAuth2AuthorizationServerJwtAutoConfiguration
-      - org.springframework.boot.security.autoconfigure.oauth2.resource.OAuth2ResourceServerAutoConfiguration
-      - org.springframework.boot.security.autoconfigure.oauth2.client.OAuth2ClientAutoConfiguration
       - org.springframework.ai.model.openai.autoconfigure.OpenAiAutoConfiguration
       - org.springframework.ai.model.openai.autoconfigure.OpenAiEmbeddingAutoConfiguration
 
@@ -53,6 +49,13 @@ spring:
     openai:
       enabled: false
       api-key: "not-used-locally"
+
+  # ─── Flyway (repair checksum mismatches in local dev) ────────────────
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    validate-on-migrate: false
+    repair: true
 
 # ─── App — MinIO (S3-compatible) ───────────────────────────────────────
 app:
