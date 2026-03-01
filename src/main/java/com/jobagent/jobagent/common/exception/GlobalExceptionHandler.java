@@ -1,5 +1,6 @@
 package com.jobagent.jobagent.common.exception;
 
+import com.jobagent.jobagent.cv.service.CvTextExtractor;
 import com.jobagent.jobagent.cv.service.CvUploadService;
 import com.jobagent.jobagent.cv.service.MinioFileStorageService;
 import lombok.extern.slf4j.Slf4j;
@@ -78,6 +79,17 @@ public class GlobalExceptionHandler {
                 HttpStatus.BAD_REQUEST, ex.getMessage());
         problem.setTitle("CV Upload Error");
         problem.setType(URI.create("https://jobagent.com/errors/cv-upload"));
+        problem.setProperty("timestamp", Instant.now());
+        return problem;
+    }
+
+    @ExceptionHandler(CvTextExtractor.CvParsingException.class)
+    public ProblemDetail handleCvParsing(CvTextExtractor.CvParsingException ex) {
+        log.error("CV parsing error: {}", ex.getMessage());
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage());
+        problem.setTitle("CV Parsing Error");
+        problem.setType(URI.create("https://jobagent.com/errors/cv-parsing"));
         problem.setProperty("timestamp", Instant.now());
         return problem;
     }

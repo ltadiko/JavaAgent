@@ -43,9 +43,11 @@ class CvUploadServiceTest {
     private FileStorageService fileStorageService;
 
     @Mock
+    private CvProcessingService cvProcessingService;
+
+    @Mock
     private MultipartFile multipartFile;
 
-    @InjectMocks
     private CvUploadService cvUploadService;
 
     private User testUser;
@@ -54,6 +56,9 @@ class CvUploadServiceTest {
 
     @BeforeEach
     void setUp() {
+        cvUploadService = new CvUploadService(
+                cvDetailsRepository, userRepository, fileStorageService, cvProcessingService);
+
         userId = UUID.randomUUID();
         tenantId = UUID.randomUUID();
 

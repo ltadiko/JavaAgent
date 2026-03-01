@@ -3,15 +3,14 @@ package com.jobagent.jobagent.cv.service;
 import com.jobagent.jobagent.auth.model.User;
 import com.jobagent.jobagent.auth.repository.UserRepository;
 import com.jobagent.jobagent.common.exception.ResourceNotFoundException;
-import com.jobagent.jobagent.common.multitenancy.TenantContext;
 import com.jobagent.jobagent.cv.dto.CvDownloadResponse;
 import com.jobagent.jobagent.cv.dto.CvSummaryResponse;
 import com.jobagent.jobagent.cv.dto.CvUploadResponse;
 import com.jobagent.jobagent.cv.model.CvDetails;
 import com.jobagent.jobagent.cv.model.CvStatus;
 import com.jobagent.jobagent.cv.repository.CvDetailsRepository;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -25,7 +24,6 @@ import java.util.UUID;
  * Sprint 3.6 — CV upload orchestration service.
  */
 @Service
-@RequiredArgsConstructor
 @Slf4j
 @Transactional
 public class CvUploadService {
@@ -40,6 +38,18 @@ public class CvUploadService {
     private final CvDetailsRepository cvDetailsRepository;
     private final UserRepository userRepository;
     private final FileStorageService fileStorageService;
+    private final CvProcessingService cvProcessingService;
+
+    public CvUploadService(
+            CvDetailsRepository cvDetailsRepository,
+            UserRepository userRepository,
+            FileStorageService fileStorageService,
+            @Lazy CvProcessingService cvProcessingService) {
+        this.cvDetailsRepository = cvDetailsRepository;
+        this.userRepository = userRepository;
+        this.fileStorageService = fileStorageService;
+        this.cvProcessingService = cvProcessingService;
+    }
 
     /**
      * Upload a new CV file.
@@ -78,6 +88,9 @@ public class CvUploadService {
         cvDetailsRepository.save(cvDetails);
 
         log.info("CV uploaded for user {}: {} ({} bytes)", userId, file.getOriginalFilename(), file.getSize());
+
+        // Trigger async processing
+        cvProcessingService.processAsync(cvDetails.getId());
 
         return new CvUploadResponse(
                 cvDetails.getId(),
