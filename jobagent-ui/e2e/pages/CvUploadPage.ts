@@ -8,7 +8,7 @@ export class CvUploadPage {
   }
 
   get heading() {
-    return this.page.getByRole('heading', { name: /my cv/i })
+    return this.page.getByRole('heading', { name: 'My CV', exact: true })
   }
 
   get uploadZone() {

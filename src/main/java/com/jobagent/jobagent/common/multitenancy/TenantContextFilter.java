@@ -1,14 +1,17 @@
 package com.jobagent.jobagent.common.multitenancy;
 
-import jakarta.servlet.*;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
-import org.springframework.core.annotation.Order;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Component;
+import org.springframework.web.filter.OncePerRequestFilter;
 
 import javax.sql.DataSource;
 import java.io.IOException;
@@ -22,23 +25,19 @@ import java.util.UUID;
  *   2. Sets PostgreSQL session variable for RLS: SET LOCAL app.current_tenant = '...'
  *   3. Adds tenantId + userId to MDC for structured logging
  *
- * Only registered when a DataSource bean is available (avoids breaking @WebMvcTest slices).
+ * Registered as a Spring Security filter (added after JWT authentication)
+ * via SecurityConfig, NOT as a standalone servlet filter.
  */
 @Component
-@ConditionalOnBean(DataSource.class)
-@Order(1)
+@RequiredArgsConstructor
 @Slf4j
-public class TenantContextFilter implements Filter {
+public class TenantContextFilter extends OncePerRequestFilter {
 
     private final DataSource dataSource;
 
-    public TenantContextFilter(DataSource dataSource) {
-        this.dataSource = dataSource;
-    }
-
     @Override
-    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
-            throws IOException, ServletException {
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
+                                     FilterChain filterChain) throws ServletException, IOException {
         try {
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             if (auth != null && auth.getPrincipal() instanceof Jwt jwt) {
@@ -48,6 +47,7 @@ public class TenantContextFilter implements Filter {
                 if (tenantIdStr != null) {
                     UUID tenantId = UUID.fromString(tenantIdStr);
                     TenantContext.setTenantId(tenantId);
+                    log.debug("TenantContext set: tenantId={}, userId={}", tenantIdStr, userId);
 
                     // MDC for structured logging
                     MDC.put("tenantId", tenantIdStr);
@@ -58,7 +58,7 @@ public class TenantContextFilter implements Filter {
                 }
             }
 
-            chain.doFilter(request, response);
+            filterChain.doFilter(request, response);
         } finally {
             TenantContext.clear();
             MDC.remove("tenantId");

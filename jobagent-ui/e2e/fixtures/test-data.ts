@@ -8,14 +8,14 @@ export const TEST_USER = {
   fullName: `E2E Test User ${timestamp}`,
   email: `e2e-test-${timestamp}@jobagent.test`,
   password: 'TestPass123!',
-  region: 'EU',
+  country: 'DE',
 }
 
 export const EXISTING_USER = {
   email: 'e2e-user@jobagent.test',
   password: 'TestPass123!',
   fullName: 'E2E Permanent User',
-  region: 'EU',
+  country: 'DE',
 }
 
 export const JOB_SEARCH = {

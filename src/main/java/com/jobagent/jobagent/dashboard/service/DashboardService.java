@@ -48,37 +48,65 @@ public class DashboardService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found: " + userId));
 
+        CvSummary cvSummary;
+        try {
+            cvSummary = buildCvSummary(userId, tenantId);
+        } catch (Exception e) {
+            log.warn("Failed to build CV summary: {}", e.getMessage());
+            cvSummary = CvSummary.builder().count(0).skillsCount(0).topSkills(List.of()).build();
+        }
+
+        ApplicationsSummary appsSummary;
+        try {
+            appsSummary = buildApplicationsSummary(userId, tenantId);
+        } catch (Exception e) {
+            log.warn("Failed to build applications summary: {}", e.getMessage());
+            appsSummary = ApplicationsSummary.builder().build();
+        }
+
+        LettersSummary lettersSummary;
+        try {
+            lettersSummary = buildLettersSummary(userId, tenantId);
+        } catch (Exception e) {
+            log.warn("Failed to build letters summary: {}", e.getMessage());
+            lettersSummary = LettersSummary.builder().count(0).build();
+        }
+
         return DashboardSummary.builder()
                 .user(buildUserSummary(user))
-                .cv(buildCvSummary(userId, tenantId))
+                .cv(cvSummary)
                 .jobs(buildJobsSummary(userId, tenantId))
-                .applications(buildApplicationsSummary(userId, tenantId))
-                .letters(buildLettersSummary(userId, tenantId))
+                .applications(appsSummary)
+                .letters(lettersSummary)
                 .build();
     }
 
     /**
      * Get recent activity for a user.
+     * Not @Transactional to allow graceful handling of individual query failures.
      */
-    @Transactional(readOnly = true)
     public List<RecentActivity> getRecentActivity(UUID userId, int limit) {
         UUID tenantId = TenantContext.requireTenantId();
         List<RecentActivity> activities = new ArrayList<>();
 
-        // Get recent applications
-        var recentApps = applicationRepository.findByUserIdAndTenantIdOrderByCreatedAtDesc(
-                userId, tenantId, PageRequest.of(0, limit));
+        try {
+            // Get recent applications
+            var recentApps = applicationRepository.findByUserIdAndTenantIdOrderByCreatedAtDesc(
+                    userId, tenantId, PageRequest.of(0, limit));
 
-        for (JobApplication app : recentApps) {
-            activities.add(RecentActivity.builder()
-                    .id(UUID.randomUUID())
-                    .type(mapApplicationStatus(app.getStatus()))
-                    .title(getApplicationActivityTitle(app))
-                    .description(app.getJob().getCompany() + " - " + app.getJob().getTitle())
-                    .entityType("APPLICATION")
-                    .entityId(app.getId())
-                    .timestamp(app.getUpdatedAt())
-                    .build());
+            for (JobApplication app : recentApps) {
+                activities.add(RecentActivity.builder()
+                        .id(UUID.randomUUID())
+                        .type(mapApplicationStatus(app.getStatus()))
+                        .title(getApplicationActivityTitle(app))
+                        .description(app.getJob().getCompany() + " - " + app.getJob().getTitle())
+                        .entityType("APPLICATION")
+                        .entityId(app.getId())
+                        .timestamp(app.getUpdatedAt())
+                        .build());
+            }
+        } catch (Exception e) {
+            log.warn("Failed to load recent applications: {}", e.getMessage());
         }
 
         // Sort by timestamp descending

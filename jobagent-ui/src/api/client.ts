@@ -26,8 +26,12 @@ apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('access_token')
-      window.location.href = '/login'
+      // Don't redirect if already on login or register page (allows error display)
+      const path = window.location.pathname
+      if (path !== '/login' && path !== '/register') {
+        localStorage.removeItem('access_token')
+        window.location.href = '/login'
+      }
     }
     return Promise.reject(error)
   }

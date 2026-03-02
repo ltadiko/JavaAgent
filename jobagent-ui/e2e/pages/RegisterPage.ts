@@ -7,11 +7,11 @@ export class RegisterPage {
     await this.page.goto('/register')
   }
 
-  async register(fullName: string, email: string, password: string, region = 'EU') {
+  async register(fullName: string, email: string, password: string, country = 'DE') {
     await this.page.getByLabel('Full Name').fill(fullName)
     await this.page.getByLabel('Email').fill(email)
     await this.page.getByLabel('Password').fill(password)
-    await this.page.getByLabel('Region').selectOption(region)
+    await this.page.getByLabel('Country').selectOption(country)
     await this.page.getByRole('button', { name: /register/i }).click()
   }
 

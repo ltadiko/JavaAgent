@@ -1,5 +1,7 @@
 package com.jobagent.jobagent.auth.service;
 
+import com.jobagent.jobagent.auth.dto.LoginRequest;
+import com.jobagent.jobagent.auth.dto.LoginResponse;
 import com.jobagent.jobagent.auth.dto.RegisterRequest;
 import com.jobagent.jobagent.auth.dto.RegisterResponse;
 import com.jobagent.jobagent.auth.model.User;
@@ -7,6 +9,7 @@ import com.jobagent.jobagent.auth.model.UserProfile;
 import com.jobagent.jobagent.auth.repository.UserProfileRepository;
 import com.jobagent.jobagent.auth.repository.UserRepository;
 import com.jobagent.jobagent.common.exception.DuplicateResourceException;
+import com.jobagent.jobagent.common.multitenancy.TenantContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -16,6 +19,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
+import java.util.UUID;
 
 /**
  * Sprint 1.5 — User registration service.
@@ -28,6 +32,34 @@ public class UserService {
     private final UserRepository userRepository;
     private final UserProfileRepository userProfileRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JwtTokenService jwtTokenService;
+
+    /**
+     * Authenticate user and return JWT token.
+     */
+    @Transactional(readOnly = true)
+    public LoginResponse login(LoginRequest request) {
+        String emailHash = hashEmail(request.email());
+        User user = userRepository.findByEmailHash(emailHash)
+                .orElseThrow(() -> new org.springframework.security.authentication.BadCredentialsException("Invalid email or password"));
+
+        if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
+            throw new org.springframework.security.authentication.BadCredentialsException("Invalid email or password");
+        }
+
+        String token = jwtTokenService.generateAccessToken(
+                user.getId(), user.getTenantId(), user.getEmail(), user.getRegion());
+        return LoginResponse.bearer(token);
+    }
+
+    /**
+     * Get user by ID.
+     */
+    @Transactional(readOnly = true)
+    public User getUserById(UUID userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new com.jobagent.jobagent.common.exception.ResourceNotFoundException("User", userId));
+    }
 
     public RegisterResponse register(RegisterRequest request) {
         // 1. Hash email for lookup
@@ -41,36 +73,47 @@ public class UserService {
         // 3. Resolve region from country
         String region = RegionResolver.resolveRegion(request.country());
 
-        // 4. Build and save User
-        User user = User.builder()
-                .email(request.email().trim().toLowerCase())
-                .emailHash(emailHash)
-                .passwordHash(passwordEncoder.encode(request.password()))
-                .fullName(request.fullName().trim())
-                .country(request.country().toUpperCase().trim())
-                .region(region)
-                .authProvider("LOCAL")
-                .enabled(true)
-                .build();
-        userRepository.save(user);
+        // 4. Generate tenant ID for new user (registration is unauthenticated)
+        UUID tenantId = UUID.randomUUID();
+        TenantContext.setTenantId(tenantId);
 
-        // 5. Create empty UserProfile linked to user
-        UserProfile profile = UserProfile.builder()
-                .user(user)
-                .preferredRemote(false)
-                .build();
-        profile.setTenantId(user.getTenantId());
-        userProfileRepository.save(profile);
+        try {
+            // 5. Build and save User
+            User user = User.builder()
+                    .email(request.email().trim().toLowerCase())
+                    .emailHash(emailHash)
+                    .passwordHash(passwordEncoder.encode(request.password()))
+                    .fullName(request.fullName().trim())
+                    .country(request.country().toUpperCase().trim())
+                    .region(region)
+                    .authProvider("LOCAL")
+                    .enabled(true)
+                    .build();
+            user.setTenantId(tenantId);
+            userRepository.save(user);
 
-        // 6. Return response
-        return new RegisterResponse(
-                user.getId(),
-                user.getEmail(),
-                user.getFullName(),
-                user.getCountry(),
-                region,
-                user.getCreatedAt()
-        );
+            // 6. Create empty UserProfile linked to user
+            UserProfile profile = UserProfile.builder()
+                    .user(user)
+                    .preferredRemote(false)
+                    .build();
+            profile.setTenantId(tenantId);
+            userProfileRepository.save(profile);
+
+            // 7. Return response
+            return new RegisterResponse(
+                    user.getId(),
+                    user.getEmail(),
+                    user.getFullName(),
+                    user.getCountry(),
+                    region,
+                    user.getCreatedAt()
+            );
+        } finally {
+            // Clear tenant context if it was set for registration
+            // (filter will clear it too, but be safe)
+            TenantContext.clear();
+        }
     }
 
     /**

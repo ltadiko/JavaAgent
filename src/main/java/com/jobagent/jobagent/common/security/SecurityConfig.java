@@ -1,5 +1,6 @@
 package com.jobagent.jobagent.common.security;
 
+import com.jobagent.jobagent.common.multitenancy.TenantContextFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -9,12 +10,14 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfigurationSource;
 
 /**
  * Security configuration — Sprint 2.1: JWT Resource Server enabled.
  * Sprint 10.5: Added Swagger UI public access.
+ * Sprint 11: TenantContextFilter registered after JWT authentication.
  *
  * <p>Public endpoints:
  * <ul>
@@ -38,7 +41,8 @@ public class SecurityConfig {
     @Order(2)
     public SecurityFilterChain apiSecurityFilterChain(
             HttpSecurity http,
-            CorsConfigurationSource corsConfigurationSource) throws Exception {
+            CorsConfigurationSource corsConfigurationSource,
+            TenantContextFilter tenantContextFilter) throws Exception {
 
         http
             .cors(cors -> cors.configurationSource(corsConfigurationSource))
@@ -61,7 +65,9 @@ public class SecurityConfig {
                 .anyRequest().permitAll()
             )
             // Enable JWT resource server
-            .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()));
+            .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()))
+            // Add TenantContextFilter AFTER JWT authentication
+            .addFilterAfter(tenantContextFilter, BearerTokenAuthenticationFilter.class);
 
         return http.build();
     }

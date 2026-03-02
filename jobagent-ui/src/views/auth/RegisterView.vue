@@ -6,11 +6,11 @@ const auth = useAuthStore()
 const fullName = ref('')
 const email = ref('')
 const password = ref('')
-const region = ref('EU')
+const country = ref('DE')
 
 async function handleRegister() {
   try {
-    await auth.register(fullName.value, email.value, password.value, region.value)
+    await auth.register(fullName.value, email.value, password.value, country.value)
   } catch {
     // error displayed via store
   }
@@ -26,28 +26,32 @@ async function handleRegister() {
 
       <form @submit.prevent="handleRegister" class="space-y-4">
         <div>
-          <label class="block text-sm font-medium text-gray-700">Full Name</label>
-          <input v-model="fullName" type="text" required
+          <label for="fullName" class="block text-sm font-medium text-gray-700">Full Name</label>
+          <input id="fullName" v-model="fullName" type="text" required
             class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none" />
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700">Email</label>
-          <input v-model="email" type="email" required
+          <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
+          <input id="email" v-model="email" type="email" required
             class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none" />
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700">Password</label>
-          <input v-model="password" type="password" required minlength="8"
+          <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
+          <input id="password" v-model="password" type="password" required minlength="8"
             class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none" />
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700">Region</label>
-          <select v-model="region"
+          <label for="country" class="block text-sm font-medium text-gray-700">Country</label>
+          <select id="country" v-model="country"
             class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none">
-            <option value="EU">Europe (EU)</option>
-            <option value="US">United States</option>
-            <option value="UK">United Kingdom</option>
-            <option value="APAC">Asia Pacific</option>
+            <option value="DE">Germany (DE)</option>
+            <option value="NL">Netherlands (NL)</option>
+            <option value="US">United States (US)</option>
+            <option value="GB">United Kingdom (GB)</option>
+            <option value="FR">France (FR)</option>
+            <option value="IN">India (IN)</option>
+            <option value="JP">Japan (JP)</option>
+            <option value="AU">Australia (AU)</option>
           </select>
         </div>
         <button type="submit" :disabled="auth.loading"

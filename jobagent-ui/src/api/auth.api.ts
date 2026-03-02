@@ -9,7 +9,7 @@ export interface RegisterRequest {
   fullName: string
   email: string
   password: string
-  region?: string
+  country?: string
 }
 
 export interface AuthResponse {

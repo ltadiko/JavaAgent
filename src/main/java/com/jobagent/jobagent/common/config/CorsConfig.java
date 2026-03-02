@@ -8,9 +8,11 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * CORS configuration for Vue.js SPA (separate origin).
+ * Supports comma-separated origins from app.cors.allowed-origins property.
  */
 @Configuration
 public class CorsConfig {
@@ -18,17 +20,20 @@ public class CorsConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource(AppProperties props) {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(
-                Arrays.asList(props.getCors().getAllowedOrigins().split(",")));
+
+        List<String> origins = Arrays.stream(props.getCors().getAllowedOrigins().split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.toList());
+        config.setAllowedOrigins(origins);
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
+        config.setExposedHeaders(List.of("Authorization", "Content-Type"));
         config.setAllowCredentials(true);
         config.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/api/**", config);
-        source.registerCorsConfiguration("/oauth2/**", config);
-        source.registerCorsConfiguration("/.well-known/**", config);
+        source.registerCorsConfiguration("/**", config);
         return source;
     }
 }
