@@ -41,7 +41,8 @@ e2e/
     ├── job-search.spec.ts
     ├── motivation-letters.spec.ts
     ├── applications.spec.ts
-    └── navigation.spec.ts
+    ├── navigation.spec.ts
+    └── full-journey.spec.ts     # ⭐ Complete user journey
 ```
 
 ## Prerequisites
