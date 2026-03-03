@@ -52,10 +52,11 @@ jobagent-ui/node_modules/
 jobagent-ui/dist/
 jobagent-ui/.env.local
 
-### Playwright ###
-jobagent-ui/playwright-report/
-jobagent-ui/test-results/
-jobagent-ui/blob-report/
+### Playwright (standalone e2e module) ###
+e2e/node_modules/
+e2e/playwright-report/
+e2e/test-results/
+e2e/blob-report/
 
 ### Docker ###
 docker-compose.override.yml

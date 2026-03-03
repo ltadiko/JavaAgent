@@ -2,7 +2,8 @@
 
 ## Overview
 
-End-to-end tests using [Playwright](https://playwright.dev/) covering all UI flows against the full local stack.
+Standalone end-to-end test module using [Playwright](https://playwright.dev/).
+Decoupled from the UI (`jobagent-ui/`) and backend (`src/`) modules — tests the **full stack** end-to-end.
 
 ## Test Coverage
 
@@ -77,19 +78,19 @@ make e2e-headed
 
 Or directly:
 ```bash
-cd jobagent-ui
-npm run test:e2e           # headless
-npm run test:e2e:ui        # interactive
-npm run test:e2e:headed    # headed
+cd e2e
+npx playwright test              # headless
+npx playwright test --ui         # interactive
+npx playwright test --headed     # headed
 ```
 
 ## Configuration
 
-See `jobagent-ui/playwright.config.ts`:
-- **Base URL:** `http://localhost:5173`
+See `e2e/playwright.config.ts`:
+- **Base URL:** `http://127.0.0.1:5173`
 - **Browser:** Chromium
 - **Timeout:** 30s per test
-- **Web server:** Auto-starts Vite (`npm run dev`) if not running
+- **Web server:** Auto-starts Vite dev server from `../jobagent-ui` if not already running
 - **Artifacts:** Screenshots on failure, video on retry, trace on retry
 
 ## Page Object Model Pattern

@@ -29,25 +29,25 @@ down-local:
 test:
 	mvn -DskipITs=true -Dtest='!**/*IntegrationTest' test
 
-# ─── E2E Tests (Playwright) ──────────────────────────────────────────────
+# ─── E2E Tests (Playwright — standalone module in /e2e) ──────────────────
 # Prerequisites:
 #   1. docker compose up -d
 #   2. Backend: mvn spring-boot:run -Dspring-boot.run.profiles=local
-#   3. Frontend Vite dev server starts automatically (or run: cd jobagent-ui && npm run dev)
+#   3. Vite dev server starts automatically via playwright.config.ts webServer
 
 # Install Playwright browsers (one-time setup)
 e2e-setup:
-	cd jobagent-ui && npm install && npx playwright install chromium
+	cd e2e && npm install && npx playwright install chromium
 
 # Run E2E tests headless
 e2e:
-	cd jobagent-ui && npm run test:e2e
+	cd e2e && npx playwright test
 
 # Run E2E tests with Playwright UI (interactive)
 e2e-ui:
-	cd jobagent-ui && npm run test:e2e:ui
+	cd e2e && npx playwright test --ui
 
 # Run E2E tests headed (watch browser)
 e2e-headed:
-	cd jobagent-ui && npm run test:e2e:headed
+	cd e2e && npx playwright test --headed
 

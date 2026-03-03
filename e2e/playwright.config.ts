@@ -1,15 +1,18 @@
 import { defineConfig, devices } from '@playwright/test'
 
 /**
- * Playwright E2E configuration for JobAgent UI.
+ * Playwright E2E configuration for JobAgent.
+ *
+ * This is a standalone E2E module — decoupled from the UI (jobagent-ui)
+ * and backend (Spring Boot) modules. It tests the full stack end-to-end.
  *
  * Prerequisites:
- *   1. docker compose up -d  (PostgreSQL, Valkey, Kafka, MinIO, Ollama)
- *   2. Backend running on :8080  (mvn spring-boot:run -Dspring-boot.run.profiles=local)
- *   3. Vite dev server on :5173  (npm run dev)  — OR use webServer below
+ *   1. docker compose up -d          (PostgreSQL, MinIO, etc.)
+ *   2. Backend on :8080              (mvn spring-boot:run -Dspring-boot.run.profiles=local)
+ *   3. Vite dev server on :5173      (auto-started by webServer config below)
  */
 export default defineConfig({
-  testDir: './e2e/tests',
+  testDir: './tests',
   fullyParallel: false,            // Run sequentially — flows depend on auth state
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
@@ -35,9 +38,10 @@ export default defineConfig({
     },
   ],
 
-  /* Optionally start Vite dev server automatically */
+  /* Auto-start the Vite dev server from the UI module */
   webServer: {
-    command: 'npx vite --host 127.0.0.1 --port 5173',
+    command: 'npm run dev -- --host 127.0.0.1 --port 5173',
+    cwd: '../jobagent-ui',
     url: 'http://127.0.0.1:5173',
     reuseExistingServer: true,
     timeout: 30_000,
