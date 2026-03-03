@@ -4,6 +4,10 @@ import com.jobagent.jobagent.cv.dto.CvDownloadResponse;
 import com.jobagent.jobagent.cv.dto.CvSummaryResponse;
 import com.jobagent.jobagent.cv.dto.CvUploadResponse;
 import com.jobagent.jobagent.cv.service.CvUploadService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -24,19 +28,20 @@ import java.util.UUID;
 @RequestMapping("/api/v1/cv")
 @RequiredArgsConstructor
 @Slf4j
+@Tag(name = "CV Management", description = "Upload, parse, download, and manage CV documents")
 public class CvController {
 
     private final CvUploadService cvUploadService;
 
-    /**
-     * Upload a new CV file.
-     *
-     * POST /api/v1/cv
-     * Content-Type: multipart/form-data
-     */
+    @Operation(summary = "Upload a CV file", description = "Uploads a CV document (PDF, DOCX) and triggers AI-powered parsing",
+            responses = {
+                @ApiResponse(responseCode = "201", description = "CV uploaded successfully"),
+                @ApiResponse(responseCode = "400", description = "Invalid file type or size"),
+                @ApiResponse(responseCode = "401", description = "Not authenticated")
+            })
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<CvUploadResponse> uploadCv(
-            @RequestParam("file") MultipartFile file,
+            @Parameter(description = "CV file (PDF or DOCX, max 10MB)") @RequestParam("file") MultipartFile file,
             @AuthenticationPrincipal Jwt jwt) {
 
         UUID userId = extractUserId(jwt);
@@ -45,11 +50,11 @@ public class CvController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    /**
-     * Get the active CV summary for the current user.
-     *
-     * GET /api/v1/cv
-     */
+    @Operation(summary = "Get active CV", description = "Returns the currently active CV for the authenticated user",
+            responses = {
+                @ApiResponse(responseCode = "200", description = "Active CV retrieved"),
+                @ApiResponse(responseCode = "404", description = "No active CV found")
+            })
     @GetMapping
     public ResponseEntity<CvSummaryResponse> getActiveCv(@AuthenticationPrincipal Jwt jwt) {
         UUID userId = extractUserId(jwt);
@@ -57,11 +62,7 @@ public class CvController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * Get CV history for the current user.
-     *
-     * GET /api/v1/cv/history
-     */
+    @Operation(summary = "Get CV upload history", description = "Returns all CV uploads for the authenticated user, ordered by upload date descending")
     @GetMapping("/history")
     public ResponseEntity<List<CvSummaryResponse>> getCvHistory(@AuthenticationPrincipal Jwt jwt) {
         UUID userId = extractUserId(jwt);
@@ -69,14 +70,15 @@ public class CvController {
         return ResponseEntity.ok(history);
     }
 
-    /**
-     * Get a presigned download URL for a specific CV.
-     *
-     * GET /api/v1/cv/{id}/download
-     */
+    @Operation(summary = "Get CV download URL", description = "Generates a presigned URL for downloading a specific CV file",
+            responses = {
+                @ApiResponse(responseCode = "200", description = "Download URL generated"),
+                @ApiResponse(responseCode = "404", description = "CV not found"),
+                @ApiResponse(responseCode = "403", description = "Access denied — CV belongs to another user")
+            })
     @GetMapping("/{id}/download")
     public ResponseEntity<CvDownloadResponse> getDownloadUrl(
-            @PathVariable UUID id,
+            @Parameter(description = "CV identifier", required = true) @PathVariable UUID id,
             @AuthenticationPrincipal Jwt jwt) {
 
         UUID userId = extractUserId(jwt);
@@ -84,14 +86,14 @@ public class CvController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * Soft-delete a CV.
-     *
-     * DELETE /api/v1/cv/{id}
-     */
+    @Operation(summary = "Delete a CV", description = "Soft-deletes a CV document. The file is retained but marked as inactive",
+            responses = {
+                @ApiResponse(responseCode = "204", description = "CV deleted successfully"),
+                @ApiResponse(responseCode = "404", description = "CV not found")
+            })
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteCv(
-            @PathVariable UUID id,
+            @Parameter(description = "CV identifier", required = true) @PathVariable UUID id,
             @AuthenticationPrincipal Jwt jwt) {
 
         UUID userId = extractUserId(jwt);

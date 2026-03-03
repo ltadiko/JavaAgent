@@ -4,6 +4,10 @@ import com.jobagent.jobagent.motivation.dto.GenerateLetterRequest;
 import com.jobagent.jobagent.motivation.dto.MotivationLetterResponse;
 import com.jobagent.jobagent.motivation.dto.UpdateLetterRequest;
 import com.jobagent.jobagent.motivation.service.MotivationLetterService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,13 +28,16 @@ import java.util.UUID;
 @RequestMapping("/api/v1/motivations")
 @RequiredArgsConstructor
 @Slf4j
+@Tag(name = "Motivation Letters", description = "AI-powered motivation letter generation, editing, and management")
 public class MotivationController {
 
     private final MotivationLetterService letterService;
 
-    /**
-     * Generate a new motivation letter.
-     */
+    @Operation(summary = "Generate a motivation letter", description = "Uses AI to generate a personalized motivation letter based on the user's CV and the target job listing",
+            responses = {
+                @ApiResponse(responseCode = "200", description = "Letter generated successfully"),
+                @ApiResponse(responseCode = "404", description = "Job or CV not found")
+            })
     @PostMapping("/generate")
     public ResponseEntity<MotivationLetterResponse> generateLetter(
             @AuthenticationPrincipal Jwt jwt,
@@ -43,53 +50,49 @@ public class MotivationController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * Get all letters for the authenticated user.
-     */
+    @Operation(summary = "List motivation letters", description = "Returns a paginated list of all motivation letters for the authenticated user")
     @GetMapping
     public ResponseEntity<Page<MotivationLetterResponse>> getLetters(
             @AuthenticationPrincipal Jwt jwt,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
+            @Parameter(description = "Page number (0-based)") @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size) {
 
         UUID userId = UUID.fromString(jwt.getSubject());
         Page<MotivationLetterResponse> letters = letterService.getLetters(userId, page, size);
         return ResponseEntity.ok(letters);
     }
 
-    /**
-     * Get a specific letter by ID.
-     */
+    @Operation(summary = "Get a motivation letter", description = "Returns full details of a specific motivation letter",
+            responses = {
+                @ApiResponse(responseCode = "200", description = "Letter found"),
+                @ApiResponse(responseCode = "404", description = "Letter not found")
+            })
     @GetMapping("/{id}")
     public ResponseEntity<MotivationLetterResponse> getLetter(
             @AuthenticationPrincipal Jwt jwt,
-            @PathVariable UUID id) {
+            @Parameter(description = "Letter identifier", required = true) @PathVariable UUID id) {
 
         UUID userId = UUID.fromString(jwt.getSubject());
         MotivationLetterResponse letter = letterService.getLetter(id, userId);
         return ResponseEntity.ok(letter);
     }
 
-    /**
-     * Get all letters for a specific job.
-     */
+    @Operation(summary = "Get letters for a job", description = "Returns all motivation letters generated for a specific job listing")
     @GetMapping("/job/{jobId}")
     public ResponseEntity<List<MotivationLetterResponse>> getLettersForJob(
             @AuthenticationPrincipal Jwt jwt,
-            @PathVariable UUID jobId) {
+            @Parameter(description = "Job listing identifier", required = true) @PathVariable UUID jobId) {
 
         UUID userId = UUID.fromString(jwt.getSubject());
         List<MotivationLetterResponse> letters = letterService.getLettersForJob(jobId, userId);
         return ResponseEntity.ok(letters);
     }
 
-    /**
-     * Update letter content (user edits).
-     */
+    @Operation(summary = "Update letter content", description = "Updates the content of a motivation letter with user edits")
     @PutMapping("/{id}")
     public ResponseEntity<MotivationLetterResponse> updateLetter(
             @AuthenticationPrincipal Jwt jwt,
-            @PathVariable UUID id,
+            @Parameter(description = "Letter identifier", required = true) @PathVariable UUID id,
             @Valid @RequestBody UpdateLetterRequest request) {
 
         UUID userId = UUID.fromString(jwt.getSubject());
@@ -99,13 +102,15 @@ public class MotivationController {
         return ResponseEntity.ok(letter);
     }
 
-    /**
-     * Delete a letter.
-     */
+    @Operation(summary = "Delete a motivation letter", description = "Permanently deletes a motivation letter",
+            responses = {
+                @ApiResponse(responseCode = "204", description = "Letter deleted"),
+                @ApiResponse(responseCode = "404", description = "Letter not found")
+            })
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteLetter(
             @AuthenticationPrincipal Jwt jwt,
-            @PathVariable UUID id) {
+            @Parameter(description = "Letter identifier", required = true) @PathVariable UUID id) {
 
         UUID userId = UUID.fromString(jwt.getSubject());
         log.info("User {} deleting letter {}", userId, id);
@@ -114,22 +119,18 @@ public class MotivationController {
         return ResponseEntity.noContent().build();
     }
 
-    /**
-     * Mark letter as sent.
-     */
+    @Operation(summary = "Mark letter as sent", description = "Updates the letter status to SENT, indicating it has been used in an application")
     @PostMapping("/{id}/send")
     public ResponseEntity<MotivationLetterResponse> markAsSent(
             @AuthenticationPrincipal Jwt jwt,
-            @PathVariable UUID id) {
+            @Parameter(description = "Letter identifier", required = true) @PathVariable UUID id) {
 
         UUID userId = UUID.fromString(jwt.getSubject());
         MotivationLetterResponse letter = letterService.markAsSent(id, userId);
         return ResponseEntity.ok(letter);
     }
 
-    /**
-     * Get letter count for user.
-     */
+    @Operation(summary = "Get letter count", description = "Returns the total number of motivation letters for the authenticated user")
     @GetMapping("/count")
     public ResponseEntity<Map<String, Long>> getLetterCount(
             @AuthenticationPrincipal Jwt jwt) {

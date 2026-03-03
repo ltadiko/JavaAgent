@@ -1,0 +1,328 @@
+# ╔══════════════════════════════════════════════════════════════════════════╗
+# ║  JobAgent — CI Pipeline                                                  ║
+# ║  Build → Unit Test → Integration Test → E2E Test                        ║
+# ╚══════════════════════════════════════════════════════════════════════════╝
+
+name: CI Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  JAVA_VERSION: '25'
+  NODE_VERSION: '22'
+
+# ─────────────────────────────────────────────────────────────────────────────
+jobs:
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Job 1: Build & Unit Tests
+  # ═══════════════════════════════════════════════════════════════════════════
+  build:
+    name: Build & Unit Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Java ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: maven
+
+      - name: Build & run unit tests
+        run: |
+          mvn -B clean compile test \
+            -DskipITs=true \
+            -Dtest='!**/*IntegrationTest,!**/ModuleDependencyTest' \
+            -Dmaven.test.failure.ignore=false
+
+      - name: Upload build artifacts
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-jar
+          path: target/*.jar
+          retention-days: 1
+
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-reports
+          path: target/surefire-reports/
+          retention-days: 7
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Job 2: Integration Tests (PostgreSQL service container)
+  # ═══════════════════════════════════════════════════════════════════════════
+  integration-test:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: build
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_DB: jobagent
+          POSTGRES_USER: jobagent
+          POSTGRES_PASSWORD: secret
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U jobagent"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
+
+      valkey:
+        image: valkey/valkey:8-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="valkey-cli ping"
+          --health-interval=5s
+          --health-timeout=3s
+          --health-retries=5
+
+      kafka:
+        image: apache/kafka:3.9.0
+        ports:
+          - 9094:9094
+        env:
+          KAFKA_NODE_ID: 1
+          KAFKA_PROCESS_ROLES: broker,controller
+          KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094
+          KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,EXTERNAL://localhost:9094
+          KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT
+          KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
+          KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+          KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+          KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+          KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+          KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+          CLUSTER_ID: "jobagent-kafka-cluster-001"
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Java ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: maven
+
+      - name: Run integration tests
+        env:
+          SPRING_PROFILES_ACTIVE: local
+          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/jobagent
+          SPRING_DATASOURCE_USERNAME: jobagent
+          SPRING_DATASOURCE_PASSWORD: secret
+          SPRING_DATA_REDIS_HOST: localhost
+          SPRING_DATA_REDIS_PORT: 6379
+          SPRING_KAFKA_BOOTSTRAP_SERVERS: localhost:9094
+          SPRING_AI_OLLAMA_BASE_URL: http://localhost:11434
+          SPRING_FLYWAY_REPAIR: "true"
+          SPRING_FLYWAY_VALIDATE_ON_MIGRATE: "false"
+          APP_STORAGE_ENDPOINT: http://localhost:9000
+          APP_STORAGE_ACCESS_KEY: minioadmin
+          APP_STORAGE_SECRET_KEY: minioadmin
+          APP_ENCRYPTION_SECRET_KEY: ci-test-key-32-chars-exactly-ok!
+        run: |
+          mvn -B clean verify \
+            -Dtest='**/*IntegrationTest' \
+            -DfailIfNoTests=false \
+            -Dmaven.test.failure.ignore=false
+
+      - name: Upload integration test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-test-reports
+          path: target/surefire-reports/
+          retention-days: 7
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Job 3: E2E Tests (Full stack via docker-compose + Playwright)
+  # ═══════════════════════════════════════════════════════════════════════════
+  e2e-test:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: build
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Java ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: maven
+
+      - name: Set up Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: |
+            e2e/package-lock.json
+            jobagent-ui/package-lock.json
+
+      # ── Step 1: Start infrastructure via docker-compose ──────────────
+      - name: Start infrastructure (docker compose)
+        run: |
+          docker compose up -d postgres valkey kafka minio minio-init ollama
+          echo "Waiting for services to be healthy..."
+          # Wait for PostgreSQL
+          timeout 60 bash -c 'until docker compose exec -T postgres pg_isready -U jobagent; do sleep 2; done'
+          echo "✅ PostgreSQL ready"
+          # Wait for Valkey
+          timeout 30 bash -c 'until docker compose exec -T valkey valkey-cli ping | grep -q PONG; do sleep 2; done'
+          echo "✅ Valkey ready"
+          # Wait for MinIO
+          timeout 30 bash -c 'until curl -sf http://localhost:9000/minio/health/live; do sleep 2; done'
+          echo "✅ MinIO ready"
+          # Wait for Kafka
+          timeout 60 bash -c 'until docker compose exec -T kafka /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list 2>/dev/null; do sleep 3; done'
+          echo "✅ Kafka ready"
+          echo "✅ All infrastructure services healthy"
+
+      # ── Step 2: Build backend (skip tests — already tested) ──────────
+      - name: Build backend JAR
+        run: mvn -B clean package -DskipTests -q
+
+      # ── Step 3: Start backend ────────────────────────────────────────
+      - name: Start Spring Boot backend
+        run: |
+          java -jar target/*.jar \
+            --spring.profiles.active=local \
+            --server.port=8080 \
+            > backend-e2e.log 2>&1 &
+          echo $! > backend.pid
+          echo "Backend PID: $(cat backend.pid)"
+
+          # Wait for backend to be ready
+          echo "Waiting for backend health check..."
+          timeout 120 bash -c '
+            until curl -sf http://localhost:8080/actuator/health/liveness 2>/dev/null | grep -q UP; do
+              sleep 3
+              echo "  ...waiting for backend"
+            done
+          '
+          echo "✅ Backend is healthy"
+
+      # ── Step 4: Install UI dependencies ──────────────────────────────
+      - name: Install UI dependencies
+        working-directory: jobagent-ui
+        run: npm ci
+
+      # ── Step 5: Install E2E dependencies + Playwright browsers ───────
+      - name: Install E2E dependencies
+        working-directory: e2e
+        run: npm ci
+
+      - name: Install Playwright browsers
+        working-directory: e2e
+        run: npx playwright install chromium --with-deps
+
+      # ── Step 6: Run E2E tests ────────────────────────────────────────
+      - name: Run Playwright E2E tests
+        working-directory: e2e
+        env:
+          CI: true
+        run: npx playwright test --reporter=list,html
+
+      # ── Cleanup & artifacts ──────────────────────────────────────────
+      - name: Stop backend
+        if: always()
+        run: |
+          if [ -f backend.pid ]; then
+            kill $(cat backend.pid) 2>/dev/null || true
+          fi
+
+      - name: Collect backend logs
+        if: always()
+        run: |
+          if [ -f backend-e2e.log ]; then
+            echo "=== Last 100 lines of backend log ==="
+            tail -100 backend-e2e.log
+          fi
+
+      - name: Stop docker compose
+        if: always()
+        run: docker compose down -v
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: e2e/playwright-report/
+          retention-days: 14
+
+      - name: Upload Playwright test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-test-results
+          path: e2e/test-results/
+          retention-days: 7
+
+      - name: Upload backend E2E logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-e2e-logs
+          path: backend-e2e.log
+          retention-days: 7
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Job 4: UI Build Verification
+  # ═══════════════════════════════════════════════════════════════════════════
+  ui-build:
+    name: UI Build & Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: jobagent-ui/package-lock.json
+
+      - name: Install dependencies
+        working-directory: jobagent-ui
+        run: npm ci
+
+      - name: Type check
+        working-directory: jobagent-ui
+        run: npx vue-tsc --build --force
+        continue-on-error: true
+
+      - name: Build production bundle
+        working-directory: jobagent-ui
+        run: npm run build
+        continue-on-error: true

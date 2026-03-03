@@ -4,6 +4,10 @@ import com.jobagent.jobagent.jobsearch.dto.*;
 import com.jobagent.jobagent.jobsearch.model.JobStatus;
 import com.jobagent.jobagent.jobsearch.service.JobMatchingService;
 import com.jobagent.jobagent.jobsearch.service.JobSearchService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,30 +28,23 @@ import java.util.UUID;
 @RequestMapping("/api/v1/jobs")
 @RequiredArgsConstructor
 @Slf4j
+@Tag(name = "Job Search", description = "Browse, search, and match job listings against your CV profile")
 public class JobSearchController {
 
     private final JobSearchService jobSearchService;
     private final JobMatchingService jobMatchingService;
 
-    /**
-     * Get active jobs with pagination.
-     *
-     * GET /api/v1/jobs?page=0&size=20
-     */
+    @Operation(summary = "List active jobs", description = "Returns a paginated list of active job listings")
     @GetMapping
     public ResponseEntity<Page<JobListingResponse>> getJobs(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
+            @Parameter(description = "Page number (0-based)") @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size) {
 
         log.debug("Getting jobs page={}, size={}", page, size);
         return ResponseEntity.ok(jobSearchService.getActiveJobs(page, size));
     }
 
-    /**
-     * Search jobs with filters.
-     *
-     * POST /api/v1/jobs/search
-     */
+    @Operation(summary = "Search jobs with filters", description = "Searches job listings using keyword, skills, location, salary, and other filters")
     @PostMapping("/search")
     public ResponseEntity<Page<JobListingResponse>> searchJobs(
             @Valid @RequestBody JobSearchRequest request) {
@@ -56,28 +53,29 @@ public class JobSearchController {
         return ResponseEntity.ok(jobSearchService.searchJobs(request));
     }
 
-    /**
-     * Get job by ID.
-     *
-     * GET /api/v1/jobs/{id}
-     */
+    @Operation(summary = "Get job by ID", description = "Returns full details of a specific job listing",
+            responses = {
+                @ApiResponse(responseCode = "200", description = "Job found"),
+                @ApiResponse(responseCode = "404", description = "Job not found")
+            })
     @GetMapping("/{id}")
-    public ResponseEntity<JobListingResponse> getJobById(@PathVariable UUID id) {
+    public ResponseEntity<JobListingResponse> getJobById(
+            @Parameter(description = "Job listing identifier", required = true) @PathVariable UUID id) {
         log.debug("Getting job by ID: {}", id);
         return ResponseEntity.ok(jobSearchService.getJobById(id));
     }
 
-    /**
-     * Get jobs matched to the current user's CV.
-     *
-     * GET /api/v1/jobs/matches?minMatch=50&page=0&size=20
-     */
+    @Operation(summary = "Get matched jobs", description = "Returns jobs ranked by match percentage against the user's active CV skills",
+            responses = {
+                @ApiResponse(responseCode = "200", description = "Matched jobs returned"),
+                @ApiResponse(responseCode = "404", description = "No active CV found for matching")
+            })
     @GetMapping("/matches")
     public ResponseEntity<Page<JobMatchScore>> getMatchedJobs(
             @AuthenticationPrincipal Jwt jwt,
-            @RequestParam(defaultValue = "30") int minMatch,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
+            @Parameter(description = "Minimum match percentage (0-100)") @RequestParam(defaultValue = "30") int minMatch,
+            @Parameter(description = "Page number (0-based)") @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size) {
 
         UUID userId = UUID.fromString(jwt.getSubject());
         log.debug("Getting matched jobs for user {} with minMatch={}", userId, minMatch);
@@ -87,15 +85,11 @@ public class JobSearchController {
         );
     }
 
-    /**
-     * Get top N job matches for current user.
-     *
-     * GET /api/v1/jobs/top-matches?limit=10
-     */
+    @Operation(summary = "Get top job matches", description = "Returns the top N best-matched jobs for the user's CV profile")
     @GetMapping("/top-matches")
     public ResponseEntity<List<JobMatchScore>> getTopMatches(
             @AuthenticationPrincipal Jwt jwt,
-            @RequestParam(defaultValue = "10") int limit) {
+            @Parameter(description = "Maximum number of results") @RequestParam(defaultValue = "10") int limit) {
 
         UUID userId = UUID.fromString(jwt.getSubject());
         log.debug("Getting top {} matches for user {}", limit, userId);
@@ -103,14 +97,10 @@ public class JobSearchController {
         return ResponseEntity.ok(jobMatchingService.getTopMatches(userId, limit));
     }
 
-    /**
-     * Get match score for a specific job against user's CV.
-     *
-     * GET /api/v1/jobs/{id}/match
-     */
+    @Operation(summary = "Get match score for a job", description = "Calculates and returns the match score for a specific job against the user's CV")
     @GetMapping("/{id}/match")
     public ResponseEntity<JobMatchScore> getJobMatchScore(
-            @PathVariable UUID id,
+            @Parameter(description = "Job listing identifier", required = true) @PathVariable UUID id,
             @AuthenticationPrincipal Jwt jwt) {
 
         UUID userId = UUID.fromString(jwt.getSubject());
@@ -119,11 +109,11 @@ public class JobSearchController {
         return ResponseEntity.ok(jobMatchingService.calculateMatchForJob(userId, id));
     }
 
-    /**
-     * Create a new job listing.
-     *
-     * POST /api/v1/jobs
-     */
+    @Operation(summary = "Create a job listing", description = "Creates a new job listing (typically used by job scrapers or admin endpoints)",
+            responses = {
+                @ApiResponse(responseCode = "201", description = "Job created successfully"),
+                @ApiResponse(responseCode = "400", description = "Validation error")
+            })
     @PostMapping
     public ResponseEntity<JobListingResponse> createJob(
             @Valid @RequestBody CreateJobRequest request) {
@@ -133,25 +123,17 @@ public class JobSearchController {
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
-    /**
-     * Update job status.
-     *
-     * PUT /api/v1/jobs/{id}/status
-     */
+    @Operation(summary = "Update job status", description = "Updates the status of a job listing (e.g., ACTIVE, EXPIRED, CLOSED)")
     @PutMapping("/{id}/status")
     public ResponseEntity<JobListingResponse> updateJobStatus(
-            @PathVariable UUID id,
-            @RequestParam JobStatus status) {
+            @Parameter(description = "Job listing identifier", required = true) @PathVariable UUID id,
+            @Parameter(description = "New job status", required = true) @RequestParam JobStatus status) {
 
         log.info("Updating job {} status to {}", id, status);
         return ResponseEntity.ok(jobSearchService.updateJobStatus(id, status));
     }
 
-    /**
-     * Get count of active jobs.
-     *
-     * GET /api/v1/jobs/count
-     */
+    @Operation(summary = "Get active job count", description = "Returns the total number of active job listings")
     @GetMapping("/count")
     public ResponseEntity<Long> getActiveJobCount() {
         return ResponseEntity.ok(jobSearchService.countActiveJobs());

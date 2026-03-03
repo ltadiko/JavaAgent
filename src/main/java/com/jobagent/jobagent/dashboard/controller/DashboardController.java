@@ -3,6 +3,9 @@ package com.jobagent.jobagent.dashboard.controller;
 import com.jobagent.jobagent.dashboard.dto.DashboardSummary;
 import com.jobagent.jobagent.dashboard.dto.RecentActivity;
 import com.jobagent.jobagent.dashboard.service.DashboardService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -20,13 +23,12 @@ import java.util.UUID;
 @RequestMapping("/api/v1/dashboard")
 @RequiredArgsConstructor
 @Slf4j
+@Tag(name = "Dashboard", description = "Aggregated dashboard summary and activity feed for the authenticated user")
 public class DashboardController {
 
     private final DashboardService dashboardService;
 
-    /**
-     * Get dashboard summary for authenticated user.
-     */
+    @Operation(summary = "Get dashboard summary", description = "Returns a complete dashboard summary including user profile, CV, jobs, applications, and letters statistics")
     @GetMapping
     public ResponseEntity<DashboardSummary> getDashboard(
             @AuthenticationPrincipal Jwt jwt) {
@@ -38,13 +40,11 @@ public class DashboardController {
         return ResponseEntity.ok(summary);
     }
 
-    /**
-     * Get recent activity feed.
-     */
+    @Operation(summary = "Get recent activity", description = "Returns the most recent activity items for the user's activity feed")
     @GetMapping("/activity")
     public ResponseEntity<List<RecentActivity>> getRecentActivity(
             @AuthenticationPrincipal Jwt jwt,
-            @RequestParam(defaultValue = "10") int limit) {
+            @Parameter(description = "Maximum number of activity items to return") @RequestParam(defaultValue = "10") int limit) {
 
         UUID userId = UUID.fromString(jwt.getSubject());
         log.debug("Getting recent activity for user {}, limit {}", userId, limit);
