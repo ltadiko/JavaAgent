@@ -3,13 +3,20 @@
 # ╚═══════════════════════════════════════════════════════════════════════════╝
 
 spring:
-  # Exclude services not needed for integration tests
-  autoconfigure:
-    exclude:
-      - org.springframework.ai.model.openai.autoconfigure.OpenAiAutoConfiguration
-      - org.springframework.ai.model.openai.autoconfigure.OpenAiEmbeddingAutoConfiguration
-      - org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration
-      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+  # ─── Disable services not needed for integration tests ────────────────
+  # Kafka: set bootstrap-servers to a non-existing host so it doesn't try to connect
+  kafka:
+    bootstrap-servers: localhost:0
+    consumer:
+      auto-offset-reset: earliest
+    listener:
+      type: batch
+      auto-startup: false
+  # Redis/Valkey: set a non-existing port to prevent connection
+  data:
+    redis:
+      host: localhost
+      port: 0
 
   # JPA settings for tests
   jpa:
@@ -27,12 +34,13 @@ spring:
     validate-on-migrate: false
     clean-disabled: false
 
-  # Spring AI - disabled for tests
+  # Spring AI — disabled for tests
   ai:
     ollama:
       enabled: false
     openai:
       enabled: false
+      api-key: "not-used-in-tests"
 
 # App settings
 app:

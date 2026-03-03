@@ -59,10 +59,14 @@ public abstract class AbstractIntegrationTest {
         }
         registry.add("spring.flyway.enabled", () -> "true");
         registry.add("spring.flyway.locations", () -> "classpath:db/migration");
-        // Disable services not needed for tests
-        registry.add("spring.kafka.bootstrap-servers", () -> "localhost:9092");
+        // Disable services not needed for integration tests
+        registry.add("spring.kafka.bootstrap-servers", () -> "localhost:0");
+        registry.add("spring.kafka.listener.auto-startup", () -> "false");
         registry.add("spring.data.redis.host", () -> "localhost");
-        registry.add("spring.ai.ollama.base-url", () -> "http://localhost:11434");
+        registry.add("spring.data.redis.port", () -> "0");
+        registry.add("spring.ai.ollama.enabled", () -> "false");
+        // App settings for tests
+        registry.add("app.encryption.secret-key", () -> "test-key-32-chars-for-aes-256!!");
     }
 
     @BeforeEach
